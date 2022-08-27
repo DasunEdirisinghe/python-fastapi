@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
 
-SQLALCHEMY_DATABASE_URL = 'mysql://dasun:Dasun973#@localhost/fastapi'
+SQLALCHEMY_DATABASE_URL = f"mysql://dasun:{os.environ.get('DB_PASS')}@localhost/{os.environ.get('DB_DB')}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

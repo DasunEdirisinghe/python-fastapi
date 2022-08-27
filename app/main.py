@@ -1,4 +1,5 @@
 from faulthandler import disable
+import os
 from turtle import pos
 from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException, Depends
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 from random import randrange
 import time
 import mysql.connector
+import os
 
 from .database import engine, get_db
 from . import models
@@ -34,8 +36,8 @@ while True:
         myDb = mysql.connector.connect(
             host="localhost",
             user="dasun",
-            password="Dasun973#",
-            database="fastapi"
+            password=os.environ.get("DB_PASS"),
+            database=os.environ.get("DB_DB")
         )
         cursor = myDb.cursor()
         print("Database connection was successfull!")
