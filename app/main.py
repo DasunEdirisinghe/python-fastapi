@@ -17,9 +17,8 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+
 # pydentic model used to validate request schemas
-
-
 class Posts(BaseModel):
     title: str
     content: str
