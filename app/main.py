@@ -13,19 +13,18 @@ from .database import engine, get_db
 from . import models
 from sqlalchemy.orm import Session
 
+#Execute sqlalchemy models
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 # pydentic model used to validate request schemas
-
-
 class Posts(BaseModel):
     title: str
     content: str
     published: Optional[bool]
 
-
+#Pydentic model for updating a post
 class PostsUpdate(BaseModel):
     title: Optional[str]
     content: Optional[str]
@@ -49,12 +48,6 @@ while True:
         time.sleep(2)
 
 
-@app.get('/test')
-def test_post(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()
-    return {"status": posts}
-
-
 @app.get("/")
 async def root():
     return {"msg": "success"}
@@ -72,6 +65,7 @@ async def create_post(new_post: Posts, db: Session = Depends(get_db)):
     post = models.Post(**new_post.dict())
     db.add(post)
     db.commit()
+    #It returns newly created post
     db.refresh(post)
     return {"data": post}
 
@@ -87,25 +81,26 @@ async def update_post(id: int, post: PostsUpdate, response: Response):
 
 
 @app.delete("/posts/{id}")
-async def delete_post(id: int, response: Response):
-    cursor.execute(""" DELETE FROM post WHERE id = %s """, (str(id),))
-    print(cursor)
-    myDb.commit()
-    return {
-        "status": f"{cursor.rowcount} deleted",
-    }
+async def delete_post(id: int, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == id)
+
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
+    
+    post.delete()
+    #post.delete(synchronize_session=False) is much more efficient
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # id is a path parameter
 @app.get("/posts/{id}")
-async def get_post(id: int, response: Response):
-    cursor.execute(""" SELECT * FROM post WHERE id = %s """, (str(id),))
-    post = responseGen(cursor=cursor, type='ALL')
-
+async def get_post(id: int, db: Session = Depends(get_db)):
+    #.all() for get all matching data
+    #.first() is going to find the first matching data
+    post = db.query(models.Post).filter(models.Post.id == id).first()
     if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"The id , {id} you are looking for does not exist")
-
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
     return {
         "data": post
     }
