@@ -68,7 +68,8 @@ async def posts(db: Session = Depends(get_db)):
 
 @app.post("/createpost", status_code=status.HTTP_201_CREATED)
 async def create_post(new_post: Posts, db: Session = Depends(get_db)):
-    post = models.Post(title=new_post.title,content=new_post.content, published=new_post.published)
+    # post = models.Post(title=new_post.title,content=new_post.content, published=new_post.published)
+    post = models.Post(**new_post.dict())
     db.add(post)
     db.commit()
     db.refresh(post)
