@@ -1,6 +1,6 @@
 from faulthandler import disable
 import os
-from turtle import pos
+from turtle import pos, title
 from typing import Optional
 from fastapi import FastAPI, Response, status, HTTPException, Depends
 from pydantic import BaseModel
@@ -17,11 +17,13 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-
 # pydentic model used to validate request schemas
+
+
 class Posts(BaseModel):
     title: str
     content: str
+    published: Optional[bool]
 
 
 class PostsUpdate(BaseModel):
@@ -48,7 +50,7 @@ while True:
 
 
 @app.get('/test')
-def test_post(db: Session = Depends(get_db)): 
+def test_post(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
     return {"status": posts}
 
@@ -65,15 +67,12 @@ async def posts(db: Session = Depends(get_db)):
 
 
 @app.post("/createpost", status_code=status.HTTP_201_CREATED)
-async def create_post(new_post: Posts):
-    cursor.execute(""" INSERT INTO post (title, content) VALUES (%s, %s) """,
-                   (new_post.title, new_post.content))
-    myDb.commit()
-
-    return {
-        "status": "{count} rows affected".format(count=cursor.rowcount),
-        "data": cursor.lastrowid
-    }
+async def create_post(new_post: Posts, db: Session = Depends(get_db)):
+    post = models.Post(title=new_post.title,content=new_post.content, published=new_post.published)
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return {"data": post}
 
 
 @app.put("/posts/{id}")
