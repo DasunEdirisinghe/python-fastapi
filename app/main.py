@@ -30,24 +30,6 @@ class PostsUpdate(BaseModel):
     content: Optional[str]
 
 
-# Connecting to the database
-while True:
-    try:
-        myDb = mysql.connector.connect(
-            host="localhost",
-            user="dasun",
-            password=os.environ.get("DB_PASS"),
-            database=os.environ.get("DB_DB")
-        )
-        cursor = myDb.cursor()
-        print("Database connection was successfull!")
-        break
-    except Exception as error:
-        print("Connecting to database failed!")
-        print("Error", error)
-        time.sleep(2)
-
-
 @app.get("/")
 async def root():
     return {"msg": "success"}
@@ -71,22 +53,27 @@ async def create_post(new_post: Posts, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{id}")
-async def update_post(id: int, post: PostsUpdate, response: Response):
-    cursor.execute(""" UPDATE post SET  title = %s, content = %s WHERE id = %s """,
-                   (post.title, post.content, str(id)))
-    myDb.commit()
-    return {
-        "status": f"{cursor.rowcount} updated"
-    }
+async def update_post(id: int, updated_post: PostsUpdate, db: Session = Depends(get_db)):
+    post = db.query(models.Post).filter(models.Post.id == id)
+    if not post.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
+
+    result = {}
+    #Removing all None valued keys
+    for key, value in updated_post.dict().items():
+        if value:
+            result[key] = value
+
+    post.update(result, synchronize_session=False)
+    db.commit()
+    return {"data": post.first()}
 
 
 @app.delete("/posts/{id}")
 async def delete_post(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id)
-
     if not post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
-    
     post.delete()
     #post.delete(synchronize_session=False) is much more efficient
     db.commit()
@@ -104,23 +91,3 @@ async def get_post(id: int, db: Session = Depends(get_db)):
     return {
         "data": post
     }
-
-
-def responseGen(cursor, type):
-    columns = [i[0] for i in cursor.description]
-    data = None
-
-    match type:
-        case "ALL":
-            data = cursor.fetchall()
-        case "ONE":
-            data = cursor.fetchone()
-
-    response = []
-    for i in data:
-        child_res = {}
-        for index, item in enumerate(i):
-            child_res[columns[index]] = item
-        response.append(child_res)
-
-    return response
