@@ -1,33 +1,15 @@
-from faulthandler import disable
-import os
-from turtle import pos, title
-from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException, Depends
-from pydantic import BaseModel
-from random import randrange
-import time
-import mysql.connector
-import os
 
-from .database import engine, get_db
-from . import models
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from sqlalchemy.orm import Session
+from typing import List
+
+from . import models, schemas
+from .database import engine, get_db
 
 #Execute sqlalchemy models
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-# pydentic model used to validate request schemas
-class Posts(BaseModel):
-    title: str
-    content: str
-    published: Optional[bool]
-
-#Pydentic model for updating a post
-class PostsUpdate(BaseModel):
-    title: Optional[str]
-    content: Optional[str]
 
 
 @app.get("/")
@@ -35,25 +17,25 @@ async def root():
     return {"msg": "success"}
 
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[schemas.Posts])
 async def posts(db: Session = Depends(get_db)):
     posts = db.query(models.Post).all()
-    return {"data": posts}
+    return posts
 
 
-@app.post("/createpost", status_code=status.HTTP_201_CREATED)
-async def create_post(new_post: Posts, db: Session = Depends(get_db)):
+@app.post("/createpost", status_code=status.HTTP_201_CREATED, response_model=schemas.Posts)
+async def create_post(new_post: schemas.BasePost, db: Session = Depends(get_db)):
     # post = models.Post(title=new_post.title,content=new_post.content, published=new_post.published)
     post = models.Post(**new_post.dict())
     db.add(post)
     db.commit()
     #It returns newly created post
     db.refresh(post)
-    return {"data": post}
+    return post
 
 
 @app.put("/posts/{id}")
-async def update_post(id: int, updated_post: PostsUpdate, db: Session = Depends(get_db)):
+async def update_post(id: int, updated_post: schemas.PostsUpdate, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id)
     if not post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} does not exist")
