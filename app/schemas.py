@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 
@@ -13,7 +13,7 @@ class BasePost(BaseModel):
         orm_mode = True
 
 
-#Pydentic model for updating a post
+# Pydentic model for updating a post
 class PostsUpdate(BaseModel):
     title: Optional[str]
     content: Optional[str]
@@ -29,3 +29,16 @@ class Posts(BasePost):
 
 class DeletePost():
     id: int
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    id: int
+    email: EmailStr
+
+    class Config:
+        orm_mode = True
