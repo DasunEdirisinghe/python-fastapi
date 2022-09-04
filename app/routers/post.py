@@ -3,9 +3,9 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from .. import models, schemas
+from .. import models, schemas, oauth
 
-#tags - it groups the documentation according to the route
+# tags - it groups the documentation according to the route
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
@@ -16,8 +16,9 @@ async def posts(db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Posts)
-async def create_post(new_post: schemas.BasePost, db: Session = Depends(get_db)):
+async def create_post(new_post: schemas.BasePost, db: Session = Depends(get_db), user_id: int = Depends(oauth.get_current_user)):
     # post = models.Post(title=new_post.title,content=new_post.content, published=new_post.published)
+    print("+++", user_id)
     post = models.Post(**new_post.dict())
     db.add(post)
     db.commit()
@@ -27,7 +28,7 @@ async def create_post(new_post: schemas.BasePost, db: Session = Depends(get_db))
 
 
 @router.put("/{id}")
-async def update_post(id: int, updated_post: schemas.PostsUpdate, db: Session = Depends(get_db)):
+async def update_post(id: int, updated_post: schemas.PostsUpdate, db: Session = Depends(get_db), user_id: int = Depends(oauth.get_current_user)):
     post = db.query(models.Post).filter(models.Post.id == id)
     if not post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -45,7 +46,7 @@ async def update_post(id: int, updated_post: schemas.PostsUpdate, db: Session = 
 
 
 @router.delete("/{id}")
-async def delete_post(id: int, db: Session = Depends(get_db)):
+async def delete_post(id: int, db: Session = Depends(get_db), user_id: int = Depends(oauth.get_current_user)):
     post = db.query(models.Post).filter(models.Post.id == id)
     if not post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
