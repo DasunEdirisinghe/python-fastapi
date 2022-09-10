@@ -31,7 +31,7 @@ def verify_access_token(token: str, credential_exception):
             raise credential_exception
 
         # Validating tokendata
-        token_data = TokenData(id=id)
+        token_data = TokenData(id=id) 
 
     except:
         raise credential_exception

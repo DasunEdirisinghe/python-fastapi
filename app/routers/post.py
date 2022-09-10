@@ -18,7 +18,6 @@ async def posts(db: Session = Depends(get_db)):
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Posts)
 async def create_post(new_post: schemas.BasePost, db: Session = Depends(get_db), user_id: int = Depends(oauth.get_current_user)):
     # post = models.Post(title=new_post.title,content=new_post.content, published=new_post.published)
-    print("+++", user_id)
     post = models.Post(**new_post.dict())
     db.add(post)
     db.commit()
