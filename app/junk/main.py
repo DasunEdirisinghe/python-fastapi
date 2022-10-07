@@ -12,11 +12,9 @@ app = FastAPI()
 
 # pydentic model used to validate request schemas
 
-
 class Posts(BaseModel):
     title: str
     content: str
-
 
 class PostsUpdate(BaseModel):
     title: Optional[str]
